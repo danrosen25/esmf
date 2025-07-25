@@ -689,6 +689,7 @@ module NUOPC_Driver
     type(ESMF_PtrInt1D), pointer :: petLists(:)
     integer, pointer          :: petList(:)
     logical, allocatable      :: mustAttributeUpdate(:)
+    type(ESMF_Info)           :: stateInfo, tagInfo
 
     rc = ESMF_SUCCESS
 
@@ -896,6 +897,18 @@ module NUOPC_Driver
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=trim(name)//":"//FILENAME, rcToReturn=rc)) &
           return  ! bail out
+        tagInfo = ESMF_InfoCreate(rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=trim(name)//":"//FILENAME, rcToReturn=rc)) &
+          return  ! bail out
+        call ESMF_InfoGetFromHost(is%wrap%modelIS(i), info=stateInfo, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=trim(name)//":"//FILENAME, rcToReturn=rc)) &
+          return  ! bail out
+        call ESMF_InfoSet(stateInfo, "/NUOPC/__tags__", tagInfo, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=trim(name)//":"//FILENAME, rcToReturn=rc)) &
+          return  ! bail out
 
         stateName = "modelComp "//trim(adjustl(iString))//" Export State"
 
@@ -910,6 +923,18 @@ module NUOPC_Driver
 
         is%wrap%modelES(i) = ESMF_StateCreate(name=trim(stateName), &
           stateintent=ESMF_STATEINTENT_EXPORT, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=trim(name)//":"//FILENAME, rcToReturn=rc)) &
+          return  ! bail out
+        tagInfo = ESMF_InfoCreate(rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=trim(name)//":"//FILENAME, rcToReturn=rc)) &
+          return  ! bail out
+        call ESMF_InfoGetFromHost(is%wrap%modelES(i), info=stateInfo, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=trim(name)//":"//FILENAME, rcToReturn=rc)) &
+          return  ! bail out
+        call ESMF_InfoSet(stateInfo, "/NUOPC/__tags__", tagInfo, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=trim(name)//":"//FILENAME, rcToReturn=rc)) &
           return  ! bail out

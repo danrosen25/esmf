@@ -70,6 +70,8 @@ module NUOPC_Model
 
   ! Generic methods
   public NUOPC_ModelGet
+  public NUOPC_ModelTagAdd
+  public NUOPC_ModelTagPrint
 
   !-----------------------------------------------------------------------------
   contains
@@ -194,6 +196,95 @@ module NUOPC_Model
     ! query ModeBase
     call NUOPC_ModelBaseGet(model, driverClock=driverClock, clock=modelClock, &
       importState=importState, exportState=exportState, rc=localrc)
+    if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=trim(name)//":"//FILENAME, rcToReturn=rc)) &
+      return  ! bail out
+
+  end subroutine
+  !-----------------------------------------------------------------------------
+
+  !-----------------------------------------------------------------------------
+!BOP
+! !IROUTINE: NUOPC_ModelTagAdd - Add tag to NUOPC Model
+! !INTERFACE:
+  ! Private name; call using NUOPC_ModelTagAdd()
+  subroutine NUOPC_ModelTagAdd(model, tag, rc)
+! !ARGUMENTS:
+    type(ESMF_GridComp)                     :: model
+    character(len=*), intent(in)            :: tag
+    integer,          intent(out), optional :: rc
+!
+! !DESCRIPTION:
+! Add tag to NUOPC Model
+!EOP
+  !-----------------------------------------------------------------------------
+    ! local variables
+    integer                         :: localrc
+    character(ESMF_MAXSTR)          :: name
+    type(ESMF_State)                :: exportState
+    type(ESMF_Info)                 :: exportInfo
+
+    if (present(rc)) rc = ESMF_SUCCESS
+
+    call NUOPC_CompGet(model, name=name, rc=localrc)
+    if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=trim(name)//":"//FILENAME, rcToReturn=rc)) return  ! bail out
+    call NUOPC_ModelGet(model, exportState=exportState, rc=localrc)
+    if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=trim(name)//":"//FILENAME, rcToReturn=rc)) &
+      return  ! bail out
+    call ESMF_InfoGetFromHost(exportState, info=exportInfo, rc=localrc)
+    if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=trim(name)//":"//FILENAME, rcToReturn=rc)) &
+      return  ! bail out
+    call ESMF_InfoSet(exportInfo, "/NUOPC/__tags__/"//trim(name), tag, rc=localrc)
+    if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=trim(name)//":"//FILENAME, rcToReturn=rc)) &
+      return  ! bail out
+
+  end subroutine
+  !-----------------------------------------------------------------------------
+
+  !-----------------------------------------------------------------------------
+!BOP
+! !IROUTINE: NUOPC_ModelTagPrint - Print tags for NUOPC Model
+! !INTERFACE:
+  ! Private name; call using NUOPC_ModelTagPrint()
+  subroutine NUOPC_ModelTagPrint(model, rc)
+! !ARGUMENTS:
+    type(ESMF_GridComp)                     :: model
+    integer,          intent(out), optional :: rc
+!
+! !DESCRIPTION:
+! Print tags for NUOPC Model
+!EOP
+  !-----------------------------------------------------------------------------
+    ! local variables
+    integer                         :: localrc
+    character(ESMF_MAXSTR)          :: name
+    type(ESMF_State)                :: importState
+    type(ESMF_Info)                 :: importInfo
+    type(ESMF_Info)                 :: tagInfo
+
+    if (present(rc)) rc = ESMF_SUCCESS
+
+    call NUOPC_CompGet(model, name=name, rc=localrc)
+    if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=trim(name)//":"//FILENAME, rcToReturn=rc)) return  ! bail out
+    call NUOPC_ModelGet(model, importState=importState, rc=localrc)
+    if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=trim(name)//":"//FILENAME, rcToReturn=rc)) &
+      return  ! bail out
+    call ESMF_InfoGetFromHost(importState, info=importInfo, rc=localrc)
+    if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=trim(name)//":"//FILENAME, rcToReturn=rc)) &
+      return  ! bail out
+    tagInfo = ESMF_InfoCreate(importInfo, key="/NUOPC/__tags__", rc=localrc)
+    call ESMF_InfoPrint(tagInfo, rc=localrc)
+    if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=trim(name)//":"//FILENAME, rcToReturn=rc)) &
+      return  ! bail out
+    call ESMF_InfoDestroy(tagInfo, rc=localrc)
     if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=trim(name)//":"//FILENAME, rcToReturn=rc)) &
       return  ! bail out

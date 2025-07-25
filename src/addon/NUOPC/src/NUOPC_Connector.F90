@@ -6338,6 +6338,7 @@ call ESMF_PointerLog(meshListE%keyMesh%this, prefix="about to destroy Mesh: ", &
     integer                   :: i
     type(ESMF_Time)           :: currTime
     character(len=40)         :: currTimeString
+    type(ESMF_Info)           :: importInfo, exportInfo, tagInfo
 
     rc = ESMF_SUCCESS
 
@@ -6449,6 +6450,24 @@ call ESMF_PointerLog(meshListE%keyMesh%this, prefix="about to destroy Mesh: ", &
           return  ! bail out
       endif
     endif
+
+    call ESMF_StateReconcile(importState, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=trim(name)//":"//FILENAME)) return  ! bail out
+
+    ! transfer info from importState to exportState
+    call ESMF_InfoGetFromHost(importState, info=importInfo, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=trim(name)//":"//FILENAME)) return  ! bail out
+    call ESMF_InfoGetFromHost(exportState, info=exportInfo, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=trim(name)//":"//FILENAME)) return  ! bail out
+    tagInfo = ESMF_InfoCreate(importInfo, "/NUOPC/__tags__", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=trim(name)//":"//FILENAME)) return  ! bail out
+    call ESMF_InfoSet(exportInfo, "/NUOPC/__tags__", tagInfo, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=trim(name)//":"//FILENAME)) return  ! bail out
 
     ! store the incoming clock as driverClock in internal state
     is%wrap%driverClock = clock
