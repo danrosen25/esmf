@@ -56,19 +56,22 @@ def print_exclusions():
     Print the lists of excluded file extensions, directories, files, and line
     matches.
     """
-    print("\nExcluded file extensions:")
-    print("\t" + ", ".join(SKIP_EXTENSIONS))
-    print("\nExcluded directories:")
+    print("### Exclusions")
+    print("\nExclude file extensions:")
+    for d in SKIP_EXTENSIONS:
+        print("- " + d)
+    print("\nExclude directories:")
     for d in SKIP_DIRS:
-        print("\t" + d)
-    print("\nExcluded files:")
+        print("- " + d)
+    print("\nExclude files:")
     for f in SKIP_FILES:
-        print("\t" + f)
-    print("\nExcluded lines matching:")
+        print("- " + f)
+    print("\nExclude lines matching:")
     for m in SKIP_MATCHES:
-        print("\t" + m)
+        print("- " + m)
+    print("")
 
-def find_outdated_copyrights(search_year):
+def find_outdated_copyrights(search_year, loutdated=False):
     """
     Find all copyright years in the codebase that are older than the given
     search year.
@@ -122,37 +125,47 @@ def find_outdated_copyrights(search_year):
             except UnicodeDecodeError:
                 # Skip files that cannot be decoded as UTF-8
                 continue
-    print("Found outdated copyright year(s): " + str(len(outdated)))
+    if loutdated:
+        print_outdated_copyrights(outdated)
     return outdated
 
 def print_outdated_copyrights(outdated_list):
     """
-    Print each outdated copyright year in the outdated list.
+    Print each outdated copyright year in the outdated list as a markdown table.
     """
     if outdated_list:
-        print("Outdated copyright year(s)")
+        print("### Outdated Copyright Years")
+        print("\n| file:line:position | year | warning |")
+        print("|--------------------|------|---------|")
         for file, line, pos, year, fwarn in outdated_list:
             if fwarn:
-                print(f"\t{file}:{line}:{pos} ({year}) (!)")
+                print(f"| {file}:{line}:{pos} | {year} | ! |")
             else:
-                print(f"\t{file}:{line}:{pos} ({year})")
+                print(f"| {file}:{line}:{pos} | {year} |   |")
+        print("")
 
-def print_warnings(outdated_list):
+def format_warnings(outdated_list):
     """
     Print warnings for copyright years that may not be in the correct format.
     """
-    warnings = []
+    fwarnings = []
     if outdated_list:
         for file, line, pos, year, fwarn in outdated_list:
             if fwarn:
-                warnings.append((file, line, pos, year))
-    if warnings:
-        print("Warning(s): check copyright format")
-        print(" Copyright (c) YYYY-YYYY, University Corporation for Atmospheric Research")
-        for file, line, pos, year in warnings:
-            print(f"\t{file}:{line}:{pos} ({year}) (!)")
+                fwarnings.append((file, line, pos, year))
+    if fwarnings:
+        print("### Format Warnings")
+        print("\nCheck Copyright Format: "
+              " \n Copyright (c) YYYY-YYYY, University Corporation for"
+              " Atmospheric Research")
+        print("\n| file:line:position | year | warning |")
+        print("|--------------------|------|---------|")
+        for file, line, pos, year in fwarnings:
+            print(f"|{file}:{line}:{pos} | {year} | ! |")
+        print("")
+    return fwarnings
 
-def update_copyrights(update_list, new_year, add):
+def update_copyrights(update_list, new_year, add=False, lupdated=False):
     """
     For each copyright year in update list, replace the old
     copyright year with the new copyright year.
@@ -170,17 +183,24 @@ def update_copyrights(update_list, new_year, add):
             updated.append((file, line, pos, year, new_year, fwarn))
             if add:
                 os.system(f"git add {file}")
-        print("Updated copyright year(s): " + str(len(updated)))
-        return updated
+    if lupdated:
+        print_updated_copyrights(updated)
+    return updated
 
 def print_updated_copyrights(updated_list):
+    """
+    Print each updated copyright year in the updated list as a markdown table.
+    """
     if updated_list:
-        print("Updated copyright year(s)")
-        for file, line, pos, old_year, new_year, ewarn in updated_list:
+        print("### Updated Copyright Years")
+        print("\n| file:line:position | old year | new year | warning |")
+        print("|--------------------|----------|----------|---------|")
+        for file, line, pos, oyear, nyear, ewarn in updated_list:
             if ewarn:
-                print(f"\t{file}:{line}:{pos} ({old_year} -> {new_year}) (!)")
+                print(f"{file}:{line}:{pos} | {oyear} | {nyear} | ! |")
             else:
-                print(f"\t{file}:{line}:{pos} ({old_year} -> {new_year})")
+                print(f"{file}:{line}:{pos} | {oyear} | {nyear} |   |")
+        print("")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="check and update copyright years.")
@@ -193,15 +213,21 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    outdated = find_outdated_copyrights(args.year)
     if args.exclusions:
         print_exclusions()
+    outdated = find_outdated_copyrights(args.year,
+        (args.list and not args.update))
     if args.update:
-        updated = update_copyrights(outdated, args.year, args.add)
-    if args.list:
-        if args.update:
-            print_updated_copyrights(updated)
-        else:
-            print_outdated_copyrights(outdated)
+        updated = update_copyrights(outdated, args.year, args.add, args.list)
+    else:
+        updated = []
     if args.warnings:
-        print_warnings(outdated)
+        fwarnings = format_warnings(outdated)
+    else:
+        fwarnings = []
+
+    print(f"Total outdated copyright years: {len(outdated)}")
+    if args.update:
+        print(f"Total updated copyright years: {len(updated)}")
+    if args.warnings:
+        print(f"Total format warnings: {len(fwarnings)}")
