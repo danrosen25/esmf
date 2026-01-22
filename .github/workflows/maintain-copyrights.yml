@@ -1,0 +1,32 @@
+name: Maintain Copyright Date
+
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: 'Year for copyright update (optional)'
+        required: false
+        type: string
+
+jobs:
+  maintain-copyrights:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Maintain Copyright Dates
+        run: |
+          CMD="python scripts/maintain_copyrights.py -l -w -u -a"
+          if [ -n "${{ inputs.year }}" ]; then
+            CMD="$CMD -y ${{ inputs.year }}"
+          fi
+          eval $CMD >> $GITHUB_STEP_SUMMARY
+      - name: Generate Patch
+        run: git diff --cached > copyright_update.patch
+      - name: Upload Patch
+        uses: actions/upload-artifact@v4
+        with:
+          path: copyright_update.patch
